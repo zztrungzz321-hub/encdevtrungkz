@@ -35,6 +35,15 @@
       <div class="section-header">
         <h2>Nhập mã Python</h2>
         <div class="button-group">
+          <label for="pythonVersionSelect" class="label" style="margin-right: 8px;">Phiên bản:</label>
+          <select id="pythonVersionSelect" style="margin-right: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid #ddd;">
+            <option value="3.8">Python 3.8</option>
+            <option value="3.9">Python 3.9</option>
+            <option value="3.10">Python 3.10</option>
+            <option value="3.11">Python 3.11</option>
+            <option value="3.12">Python 3.12</option>
+            <option value="3.13" selected>Python 3.13</option>
+          </select>
           <button id="encodeBtn">Mã hóa</button>
           <button id="copyBtn" class="secondary">Sao chép</button>
           <button id="clearBtn" class="ghost">Xóa</button>
@@ -54,8 +63,8 @@
     <section class="card info-card">
       <h3>Cách hoạt động</h3>
       <ul>
-        <li>Chuyển mã nguồn sang chuỗi base64.</li>
-        <li>Áp dụng XOR với khóa cố định để che dấu.</li>
+        <li>Chuyển mã nguồn sang dạng hex UTF-8.</li>
+        <li>Áp dụng ánh xạ ký tự theo phong cách enc bạn cung cấp.</li>
         <li>Tạo một script Python tự giải mã và chạy lại nội dung gốc.</li>
       </ul>
       <p>Đây là một mẫu hiện đại, phù hợp để demo trên GitHub Pages mà không cần backend.</p>
