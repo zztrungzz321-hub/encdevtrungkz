@@ -4,15 +4,36 @@ const encodeBtn = document.getElementById('encodeBtn');
 const copyBtn = document.getElementById('copyBtn');
 const clearBtn = document.getElementById('clearBtn');
 const downloadBtn = document.getElementById('downloadBtn');
+const pythonVersionSelect = document.getElementById('pythonVersionSelect');
 
-const KEY = 'enc-web-2026';
+const baseAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const customSymbols = '🐉🐲⭐✦✧✨💫🌠⚡🔥💥☄️🌪❄️🌀🥋🥊⚔️👊🙌👐🟠🔴🟡🟢🔵🟣⚫⚪👽🤖👺🐢🐒🦍👑💎🔮🍑🍗🍚🍶🏯⛩⛰🛡👑🧙‍♂️🤜🤛😡😤🥵🤯🌌🌍🌑☀️🌠ДБГИЛПФЦЧШЯ🔮𓆏𓃰𓀄𓁆ΩΨΦ🎏🎐🎋𓅓𓆙𓋹𓀎𓁉あいうえおサシスセソ🎭🃏🎯🎲🎰𓂉𓃊𓅔𓇎𓋪𓎳𓐍𓁺𓀠𓅎𓆈𓆦𓃗𓃠𓄿𓅜𓇢𓈎𓉤𓊗𓋔𓌜𓍯𓎵𓏢𓐔';
 
-function toBase64(text) {
-  return btoa(unescape(encodeURIComponent(text)));
+const encodeMap = Object.fromEntries(
+  [...baseAlphabet].map((char, index) => [char, customSymbols[index % customSymbols.length]])
+);
+const decodeMap = Object.fromEntries(
+  Object.entries(encodeMap).map(([key, value]) => [value, key])
+);
+
+function toUtf8Hex(text) {
+  return Array.from(new TextEncoder().encode(text), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function fromBase64(data) {
-  return decodeURIComponent(escape(atob(data)));
+function enc(text) {
+  const noisy = toUtf8Hex(text);
+  const mapped = noisy.split('').map((char) => encodeMap[char] ?? char).join('');
+  return `shenron("${escapeForPython(mapped)}")`;
+}
+
+function shenron(value) {
+  const hex = value.split('').map((char) => decodeMap[char] ?? char).join('');
+  const bytes = Uint8Array.from(hex.match(/.{1,2}/g).map((pair) => parseInt(pair, 16)));
+  return new TextDecoder().decode(bytes);
+}
+
+function escapeForPython(text) {
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 function encodeSource() {
@@ -22,15 +43,12 @@ function encodeSource() {
     return;
   }
 
-  const base64Value = toBase64(source);
-  const encodedBytes = Array.from(base64Value, (char, index) => {
-    const keyChar = KEY[index % KEY.length].charCodeAt(0);
-    return char.charCodeAt(0) ^ keyChar;
-  });
+  const version = pythonVersionSelect ? pythonVersionSelect.value : '3.13';
+  const payloadExpr = enc(source);
+  const wrapped = `#!/usr/bin/env python${version}
+# -*- coding: utf-8 -*-
 
-  const payloadHex = encodedBytes.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-
-  const wrapped = `import base64\n\nkey = "${KEY}"\npayload = "${payloadHex}"\n\nraw = bytes.fromhex(payload)\nplain = bytes(b ^ ord(key[i % len(key)]) for i, b in enumerate(raw))\nsource = base64.b64decode(plain).decode("utf-8")\nexec(source)\n`;
+string = "${baseAlphabet}"\ncust = ${JSON.stringify(customSymbols)}\ne = dict(zip(string, cust))\nd = {v: k for k, v in e.items()}\n\ndef shenron(s):\n    noisy = ''.join(d.get(c, c) for c in s)\n    return bytes.fromhex(noisy).decode('utf-8')\n\nexec(${payloadExpr})\n`;
 
   output.value = wrapped;
 }
@@ -52,11 +70,12 @@ function clearAll() {
 
 function downloadPy() {
   if (!output.value) return;
+  const version = pythonVersionSelect ? pythonVersionSelect.value : '3.13';
   const blob = new Blob([output.value], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'encoded_python.py';
+  link.download = `encoded_python_${version.replace('.', '')}.py`;
   link.click();
   URL.revokeObjectURL(url);
 }
